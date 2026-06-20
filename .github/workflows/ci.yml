@@ -1,0 +1,59 @@
+name: Anomaly Sentinel CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: "${{ matrix.sector }} | Python ${{ matrix.python-version }}"
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+        sector: [fintech, medtech]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run schema contract tests — ${{ matrix.sector }}
+        run: |
+          python -m pytest tests/api/test_${{ matrix.sector }}_schema.py \
+            -v \
+            --tb=short \
+            -m "${{ matrix.sector }}" \
+            --junitxml=reports/junit-${{ matrix.sector }}-py${{ matrix.python-version }}.xml
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-${{ matrix.sector }}-py${{ matrix.python-version }}
+          path: reports/junit-*.xml
+
+  quality-gate:
+    name: Quality gate
+    needs: test
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Check all jobs passed
+        run: |
+          if [ "${{ needs.test.result }}" != "success" ]; then
+            echo "One or more sector test jobs failed — blocking merge"
+            exit 1
+          fi
+          echo "All sector tests passed — quality gate green"
