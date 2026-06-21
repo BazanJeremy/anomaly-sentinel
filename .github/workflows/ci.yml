@@ -7,53 +7,108 @@ on:
     branches: [main]
 
 jobs:
-  test:
-    name: "${{ matrix.sector }} | Python ${{ matrix.python-version }}"
+  schema-tests:
+    name: "Schema contracts | ${{ matrix.sector }} | Python ${{ matrix.python-version }}"
     runs-on: ubuntu-latest
-
     strategy:
       fail-fast: false
       matrix:
         python-version: ["3.11", "3.12"]
         sector: [fintech, medtech]
-
     steps:
       - uses: actions/checkout@v4
-
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
-
-      - name: Install dependencies
-        run: pip install -r requirements.txt
-
-      - name: Run schema contract tests — ${{ matrix.sector }}
+      - run: pip install -r requirements.txt
+      - name: Schema contract tests — ${{ matrix.sector }}
         run: |
           python -m pytest tests/api/test_${{ matrix.sector }}_schema.py \
-            -v \
-            --tb=short \
-            -m "${{ matrix.sector }}" \
-            --junitxml=reports/junit-${{ matrix.sector }}-py${{ matrix.python-version }}.xml
-
-      - name: Upload test results
-        uses: actions/upload-artifact@v4
+            -v --tb=short \
+            --junitxml=reports/junit-schema-${{ matrix.sector }}-py${{ matrix.python-version }}.xml
+      - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: test-results-${{ matrix.sector }}-py${{ matrix.python-version }}
+          name: results-schema-${{ matrix.sector }}-py${{ matrix.python-version }}
+          path: reports/junit-*.xml
+
+  ai-behaviour-tests:
+    name: "AI behaviour | ${{ matrix.sector }} | Python ${{ matrix.python-version }}"
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+        sector: [fintech, medtech]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: AI behaviour tests — ${{ matrix.sector }} (fallback mode)
+        run: |
+          python -m pytest tests/ai_behaviour/test_${{ matrix.sector }}_classifier.py \
+                           tests/ai_behaviour/test_classifier_models.py \
+            -v --tb=short \
+            --junitxml=reports/junit-ai-${{ matrix.sector }}-py${{ matrix.python-version }}.xml
+        # ANTHROPIC_API_KEY intentionally not set — fallback mode runs in CI
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: results-ai-${{ matrix.sector }}-py${{ matrix.python-version }}
+          path: reports/junit-*.xml
+
+  e2e-tests:
+    name: "E2E | Python ${{ matrix.python-version }}"
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Install Playwright browsers
+        run: python -m playwright install --with-deps chromium
+      - name: API endpoint tests
+        run: |
+          python -m pytest tests/e2e/test_api_endpoints.py \
+            -v --tb=short \
+            --junitxml=reports/junit-e2e-api-py${{ matrix.python-version }}.xml
+      - name: Dashboard UI tests (Playwright)
+        run: |
+          python -m pytest tests/e2e/test_dashboard_ui.py \
+            -v --tb=short \
+            --junitxml=reports/junit-e2e-ui-py${{ matrix.python-version }}.xml
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: results-e2e-py${{ matrix.python-version }}
           path: reports/junit-*.xml
 
   quality-gate:
-    name: Quality gate
-    needs: test
+    name: "Quality gate"
+    needs: [schema-tests, ai-behaviour-tests, e2e-tests]
     runs-on: ubuntu-latest
     if: always()
     steps:
-      - name: Check all jobs passed
+      - name: All jobs must pass
         run: |
-          if [ "${{ needs.test.result }}" != "success" ]; then
-            echo "One or more sector test jobs failed — blocking merge"
+          schema="${{ needs.schema-tests.result }}"
+          ai="${{ needs.ai-behaviour-tests.result }}"
+          e2e="${{ needs.e2e-tests.result }}"
+          echo "Schema:      $schema"
+          echo "AI behaviour: $ai"
+          echo "E2E:         $e2e"
+          if [ "$schema" != "success" ] || [ "$ai" != "success" ] || [ "$e2e" != "success" ]; then
+            echo "One or more jobs failed — blocking merge"
             exit 1
           fi
-          echo "All sector tests passed — quality gate green"
+          echo "All jobs passed — quality gate green ✓"

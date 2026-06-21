@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Anomaly Sentinel — Dashboard</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0f1117; color: #e2e8f0; min-height: 100vh; }
+    header { background: #1a1d2e; border-bottom: 1px solid #2d3148; padding: 1rem 2rem; display: flex; align-items: center; gap: 1rem; }
+    header h1 { font-size: 1.25rem; font-weight: 600; color: #a78bfa; }
+    .badge { font-size: 0.7rem; padding: 0.2rem 0.6rem; border-radius: 999px; font-weight: 600; }
+    .badge-ok { background: #064e3b; color: #6ee7b7; }
+    .badge-fallback { background: #78350f; color: #fcd34d; }
+    main { max-width: 1100px; margin: 0 auto; padding: 2rem; display: grid; gap: 1.5rem; }
+    .card { background: #1a1d2e; border: 1px solid #2d3148; border-radius: 0.75rem; padding: 1.5rem; }
+    .card h2 { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.08em; color: #94a3b8; margin-bottom: 1rem; }
+    .controls { display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: flex-end; }
+    select, button { border-radius: 0.5rem; border: 1px solid #2d3148; background: #0f1117; color: #e2e8f0; padding: 0.5rem 0.75rem; font-size: 0.875rem; }
+    button { background: #7c3aed; border-color: #7c3aed; cursor: pointer; font-weight: 600; padding: 0.5rem 1.25rem; transition: background 0.15s; }
+    button:hover { background: #6d28d9; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    label { font-size: 0.8rem; color: #94a3b8; display: block; margin-bottom: 0.3rem; }
+    .result-box { margin-top: 1.25rem; background: #0f1117; border: 1px solid #2d3148; border-radius: 0.5rem; padding: 1rem; font-family: monospace; font-size: 0.8rem; white-space: pre-wrap; word-break: break-all; min-height: 60px; color: #a5f3fc; display: none; }
+    .result-box.visible { display: block; }
+    .metrics-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 1rem; margin-top: 1rem; }
+    .metric { background: #0f1117; border: 1px solid #2d3148; border-radius: 0.5rem; padding: 0.875rem; text-align: center; }
+    .metric .value { font-size: 1.5rem; font-weight: 700; color: #a78bfa; }
+    .metric .label { font-size: 0.7rem; color: #64748b; margin-top: 0.25rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    .gate-pass { color: #6ee7b7 !important; }
+    .gate-fail { color: #f87171 !important; }
+    .anomaly-true { color: #f87171; }
+    .anomaly-false { color: #6ee7b7; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.8rem; margin-top: 1rem; }
+    th { text-align: left; padding: 0.5rem 0.75rem; color: #64748b; font-weight: 600; border-bottom: 1px solid #2d3148; }
+    td { padding: 0.5rem 0.75rem; border-bottom: 1px solid #1e2235; }
+    tr:last-child td { border-bottom: none; }
+    .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid #4c1d95; border-top-color: #a78bfa; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 0.4rem; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>⚡ Anomaly Sentinel</h1>
+  <span id="mode-badge" class="badge">loading…</span>
+</header>
+
+<main>
+
+  <!-- CLASSIFY CARD -->
+  <div class="card" id="classify-card">
+    <h2>Live Classification</h2>
+    <div class="controls">
+      <div>
+        <label for="sector-select">Sector</label>
+        <select id="sector-select">
+          <option value="fintech">Fintech</option>
+          <option value="medtech">Medtech</option>
+        </select>
+      </div>
+      <div>
+        <label for="scenario-select">Scenario</label>
+        <select id="scenario-select"></select>
+      </div>
+      <div>
+        <label for="prompt-select">Prompt version</label>
+        <select id="prompt-select">
+          <option value="v1.1">v1.1 (fintech)</option>
+          <option value="v1.0">v1.0</option>
+        </select>
+      </div>
+      <button id="classify-btn" onclick="runClassify()">Classify</button>
+    </div>
+    <div class="result-box" id="classify-result"></div>
+  </div>
+
+  <!-- BATCH CARD -->
+  <div class="card" id="batch-card">
+    <h2>Batch Evaluation</h2>
+    <div class="controls">
+      <div>
+        <label for="batch-sector">Sector</label>
+        <select id="batch-sector">
+          <option value="fintech">Fintech</option>
+          <option value="medtech">Medtech</option>
+        </select>
+      </div>
+      <div>
+        <label for="batch-n">Samples / scenario</label>
+        <select id="batch-n">
+          <option value="3">3</option>
+          <option value="5" selected>5</option>
+          <option value="10">10</option>
+        </select>
+      </div>
+      <button id="batch-btn" onclick="runBatch()">Run evaluation</button>
+    </div>
+    <div class="metrics-grid" id="metrics-grid" style="display:none"></div>
+    <div class="result-box" id="batch-result"></div>
+  </div>
+
+  <!-- SCENARIOS TABLE CARD -->
+  <div class="card" id="scenarios-card">
+    <h2>Scenario Registry</h2>
+    <table id="scenarios-table">
+      <thead><tr><th>Sector</th><th>Scenario</th><th>Expected</th><th>Severity</th></tr></thead>
+      <tbody id="scenarios-body"></tbody>
+    </table>
+  </div>
+
+</main>
+
+<script>
+  const API = '';
+
+  async function fetchHealth() {
+    const r = await fetch(`${API}/api/health`);
+    const d = await r.json();
+    const badge = document.getElementById('mode-badge');
+    badge.textContent = d.mode === 'llm' ? 'LLM mode' : 'Fallback mode';
+    badge.className = 'badge ' + (d.mode === 'llm' ? 'badge-ok' : 'badge-fallback');
+  }
+
+  async function loadScenarios() {
+    const r = await fetch(`${API}/api/scenarios`);
+    const d = await r.json();
+    const tbody = document.getElementById('scenarios-body');
+    tbody.innerHTML = '';
+    for (const [sector, scenarios] of Object.entries(d)) {
+      for (const s of scenarios) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${sector}</td>
+          <td>${s.name}</td>
+          <td class="${s.is_anomaly ? 'anomaly-true' : 'anomaly-false'}">${s.is_anomaly ? 'ANOMALY' : 'CLEAN'}</td>
+          <td>${s.severity || '—'}</td>
+        `;
+        tbody.appendChild(tr);
+      }
+    }
+  }
+
+  async function populateScenarioDropdown() {
+    const sector = document.getElementById('sector-select').value;
+    const r = await fetch(`${API}/api/scenarios?sector=${sector}`);
+    const d = await r.json();
+    const sel = document.getElementById('scenario-select');
+    sel.innerHTML = '';
+    for (const s of d[sector] || []) {
+      const opt = document.createElement('option');
+      opt.value = s.name;
+      opt.textContent = s.name + (s.is_anomaly ? ' ⚠' : ' ✓');
+      sel.appendChild(opt);
+    }
+  }
+
+  document.getElementById('sector-select').addEventListener('change', populateScenarioDropdown);
+
+  async function runClassify() {
+    const btn = document.getElementById('classify-btn');
+    const box = document.getElementById('classify-result');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Classifying…';
+    box.className = 'result-box';
+
+    const payload = {
+      sector: document.getElementById('sector-select').value,
+      scenario: document.getElementById('scenario-select').value,
+      prompt_version: document.getElementById('prompt-select').value,
+    };
+
+    try {
+      const r = await fetch(`${API}/api/classify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const d = await r.json();
+      box.textContent = JSON.stringify(d, null, 2);
+      box.className = 'result-box visible';
+    } catch(e) {
+      box.textContent = 'Error: ' + e.message;
+      box.className = 'result-box visible';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Classify';
+    }
+  }
+
+  async function runBatch() {
+    const btn = document.getElementById('batch-btn');
+    const box = document.getElementById('batch-result');
+    const grid = document.getElementById('metrics-grid');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Running…';
+    box.className = 'result-box';
+    grid.style.display = 'none';
+
+    const payload = {
+      sector: document.getElementById('batch-sector').value,
+      n_per_scenario: parseInt(document.getElementById('batch-n').value),
+    };
+
+    try {
+      const r = await fetch(`${API}/api/batch`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const d = await r.json();
+
+      if (d.error) { box.textContent = 'Error: ' + d.error; box.className = 'result-box visible'; return; }
+
+      const gateClass = d.passes_quality_gate ? 'gate-pass' : 'gate-fail';
+      const gateText = d.passes_quality_gate ? '✓ PASS' : '✗ FAIL';
+      grid.innerHTML = `
+        <div class="metric"><div class="value">${(d.precision*100).toFixed(1)}%</div><div class="label">Precision</div></div>
+        <div class="metric"><div class="value">${(d.recall*100).toFixed(1)}%</div><div class="label">Recall</div></div>
+        <div class="metric"><div class="value">${(d.f1_score*100).toFixed(1)}%</div><div class="label">F1</div></div>
+        <div class="metric"><div class="value">${(d.false_positive_rate*100).toFixed(1)}%</div><div class="label">FP Rate</div></div>
+        <div class="metric"><div class="value">${d.total}</div><div class="label">Total samples</div></div>
+        <div class="metric"><div class="value ${gateClass}">${gateText}</div><div class="label">Quality gate</div></div>
+      `;
+      grid.style.display = 'grid';
+      box.textContent = d.summary;
+      box.className = 'result-box visible';
+    } catch(e) {
+      box.textContent = 'Error: ' + e.message;
+      box.className = 'result-box visible';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Run evaluation';
+    }
+  }
+
+  // Init
+  fetchHealth();
+  loadScenarios();
+  populateScenarioDropdown();
+</script>
+</body>
+</html>
