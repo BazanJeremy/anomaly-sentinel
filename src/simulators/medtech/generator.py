@@ -114,7 +114,7 @@ def scenario_hypertensive_crisis() -> VitalSigns:
     """
     now = datetime.now(timezone.utc)
     systolic = random.randint(180, 240)
-    diastolic = random.randint(110, systolic - 30)  # Must stay below systolic
+    diastolic = random.randint(110, min(systolic - 30, 200))  # Clamp to schema max of 200
     return VitalSigns(
         reading_id=uuid.uuid4(),
         patient_id=_patient_id(),
@@ -145,10 +145,10 @@ def scenario_bradycardia_event() -> VitalSigns:
         timestamp=now,
         vital_type=VitalType.ICU,
         device=CALIBRATED_DEVICE,
-        spo2_pct=round(random.uniform(88.0, 94.0), 1),
+        spo2_pct=round(random.uniform(91.0, 95.0), 1),  # Above spo2 threshold so bradycardia rule fires
         heart_rate_bpm=random.randint(20, 39),  # Clinical bradycardia < 40
         systolic_bp_mmhg=random.randint(70, 90),  # Associated hypotension
-        diastolic_bp_mmhg=random.randint(40, 60),
+        diastolic_bp_mmhg=random.randint(40, min(60, 89 - 10)),  # Must stay < systolic
         temperature_celsius=round(random.uniform(35.0, 36.5), 1),  # Slight hypothermia
         respiratory_rate_bpm=random.randint(6, 10),
         minutes_since_last_reading=random.uniform(5, 20),
