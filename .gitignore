@@ -14,3 +14,8 @@ reports/
 
 # Environment
 .env
+
+# Internal working documents (local only, never published)
+CLAUDE.md
+AUDIT-anomaly-sentinel.md
+.claude/
