@@ -24,7 +24,7 @@ The anomaly classifier requires a language model to analyse structured transacti
 | Clinical/financial reasoning | ★★★★★ | ★★★★★ | ★★★☆☆ | ★★☆☆☆ |
 | Latency (p95) | ~800ms | ~1200ms | ~4000ms | <1ms |
 | Cost (per 1K calls) | ~$0.30 | ~$0.50 | $0.00 | $0.00 |
-| API free tier for portfolio | ✓ | ✓ | N/A | N/A |
+| API free tier available | ✓ | ✓ | N/A | N/A |
 | Structured output enforcement | Native JSON mode | Function calling | Prompt-only | N/A |
 | Context window | 200K tokens | 128K tokens | 32K tokens | N/A |
 
@@ -36,11 +36,11 @@ Claude Sonnet was selected for three reasons:
 
 2. **Clinical and financial domain reasoning.** Both sectors require the model to understand domain-specific thresholds (SpO2 < 90% = critical; daily transaction velocity > 20 = suspicious). Claude Sonnet demonstrated accurate threshold reasoning without domain-specific fine-tuning.
 
-3. **Portfolio alignment.** The project is built to demonstrate AI-augmented QA engineering. Using Anthropic's Claude creates a coherent narrative with Jérémy's existing experience integrating Claude via MCP at EDF.
+3. **Ecosystem alignment.** The framework demonstrates AI-augmented QA engineering and builds on prior production experience integrating Claude via MCP in enterprise QA pipelines.
 
 ## Consequences
 
 - **API key required** for the AI behaviour test suite (`tests/ai_behaviour/`). Schema contract tests (`tests/api/`) run without any API key and form the CI baseline.
-- The classifier module accepts a `model` parameter to allow swapping to GPT-4o or a local model without changing the test suite.
-- Prompt versions are stored in `src/ai_engine/prompts/` and tested for regression (see Week 2 roadmap).
-- Cost for a full portfolio demo run (~500 classifications): estimated $0.15 with Sonnet.
+- The model identifier is centralised in a single `MODEL` constant in the classifier module, so it can be swapped for GPT-4o or a local model without changing the test suite.
+- Prompt versions are stored in `src/ai_engine/prompts/` and tested for regression on every push.
+- Cost for a full demo run (~500 classifications): estimated $0.15 with Sonnet.
