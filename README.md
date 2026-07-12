@@ -134,6 +134,19 @@ du classifieur — l'architecture adaptateur le permet (ADR-001) ; un re-run pla
 du corpus pour détecter la dérive du modèle ; un export de rapport d'audit horodaté
 pour la traçabilité réglementaire.
 
+## Projets associés
+
+Ces outils partagent les mêmes principes : **le déterministe d'abord, l'IA là où elle apporte — le QA reste l'arbitre.** Tous tournent en local, aucune clé API requise.
+
+| Projet | Focus |
+|---|---|
+| [EvalForge](https://github.com/BazanJeremy/EvalForge) | Évaluation de LLM & calibration du juge |
+| [ReleaseGuard](https://github.com/BazanJeremy/ReleaseGuard) | Verrou de release GO/NO-GO explicable |
+| [FlakySense](https://github.com/BazanJeremy/flakysense) | Diagnostic statistique des tests flaky |
+| [Anomaly Sentinel](https://github.com/BazanJeremy/anomaly-sentinel) **← ce repo** | Tester les IA de détection d'anomalies (medtech · fintech) |
+| [TestScribe](https://github.com/BazanJeremy/testscribe) | Enrichissement de bug reports assisté par IA |
+| [SkyGuard](https://github.com/BazanJeremy/skyguard) | Quality gate sécurité pour systèmes critiques avioniques |
+
 ## Auteur
 
 **Jérémy Bazan** — Ingénieur QA / Lead Tech QA, spécialisation AI-driven Quality.

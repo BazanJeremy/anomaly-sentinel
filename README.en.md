@@ -254,6 +254,19 @@ This framework was built using a **shift-left QA** approach — defects were cau
 
 ---
 
+## Related projects
+
+These tools share the same principles: **deterministic first, AI where it earns its place — the QA stays the arbiter.** All run locally, no API keys required.
+
+| Project | Focus |
+|---|---|
+| [EvalForge](https://github.com/BazanJeremy/EvalForge) | LLM evaluation & judge calibration |
+| [ReleaseGuard](https://github.com/BazanJeremy/ReleaseGuard) | Explainable GO/NO-GO release gate |
+| [FlakySense](https://github.com/BazanJeremy/flakysense) | Statistical flaky-test diagnosis |
+| [Anomaly Sentinel](https://github.com/BazanJeremy/anomaly-sentinel) **← this repo** | Testing AI anomaly-detection systems (medtech · fintech) |
+| [TestScribe](https://github.com/BazanJeremy/testscribe) | AI-assisted bug report enrichment |
+| [SkyGuard](https://github.com/BazanJeremy/skyguard) | Security quality gate for critical avionics systems |
+
 ## About
 
 Built by **Jérémy Bazan** — QA Engineer with expertise in regulated-industry testing, AI-augmented QA, and test automation at scale.
