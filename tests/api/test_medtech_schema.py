@@ -3,7 +3,7 @@ Medtech schema contract tests.
 
 Each test documents a clinical validation rule that maps to a real
 IEC 62304 requirement (referenced in comments). This traceability pattern
-is what differentiates a senior QA portfolio from a junior one.
+is what differentiates senior QA practice from junior practice.
 """
 
 from __future__ import annotations

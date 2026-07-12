@@ -13,7 +13,7 @@ Endpoints:
   GET  /api/metrics               → Last batch metrics (cached in-process)
 
 Design note: the app intentionally avoids a database to stay zero-dependency.
-State is held in module-level dicts — fine for a demo/portfolio context.
+State is held in module-level dicts — fine for a demo context.
 In a production system this would be replaced by a proper metrics store.
 """
 
