@@ -3,13 +3,11 @@
 **AI-augmented test framework for anomaly detection systems in regulated industries — Medtech & Fintech**
 
 [![CI](https://github.com/BazanJeremy/anomaly-sentinel/actions/workflows/ci.yml/badge.svg)](https://github.com/BazanJeremy/anomaly-sentinel/actions/workflows/ci.yml)
-[![Python](https://img.shields.io/badge/python-3.11_|_3.12-blue)](requirements.txt)
-[![Sectors](https://img.shields.io/badge/sectors-medtech_|_fintech-purple)](./)
-[![License](https://img.shields.io/badge/license-MIT-lightgrey)](LICENSE)
+[![Tests](https://img.shields.io/badge/tests-182%20passing-brightgreen?logo=pytest)](tests/)
+[![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12-blue?logo=python)](requirements.txt)
+[![License: MIT](https://img.shields.io/badge/license-MIT-lightgrey)](LICENSE)
 
 > 🇫🇷 [Version française](README.md)
-
----
 
 ## What this framework demonstrates
 
