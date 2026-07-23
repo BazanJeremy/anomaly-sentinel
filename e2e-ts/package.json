@@ -1,0 +1,14 @@
+{
+  "name": "anomaly-sentinel-e2e-ts",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Self-contained TypeScript Playwright end-to-end test harness",
+  "scripts": {
+    "test": "playwright test",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.54.0",
+    "@types/node": "^24.0.0"
+  }
+}
