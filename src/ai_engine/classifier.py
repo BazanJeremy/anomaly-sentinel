@@ -86,7 +86,7 @@ def _rule_based_classify_fintech(tx: Transaction) -> AnomalyResult:
     # DORMANT_ACCOUNT + unknown device
     if (
         not ctx["is_known_device"]
-        and ctx.get("minutes_since_last_tx", 0) > 60 * 24 * 89  # >89 days
+        and ctx.get("minutes_since_last_tx", 0) >= 60 * 24 * 90  # 90 days or more
         and ctx["amount"] > 500
     ):
         return AnomalyResult(

@@ -80,7 +80,7 @@ des tests bloquants, pas des intentions.
 | `geo_impossible` | Changement de pays moins de 2 h après la transaction précédente | critique |
 | `velocity_burst` | 15 transactions ou plus sur la journée | haute |
 | `card_testing` | Micro-montant < 1 € sur appareil inconnu | haute |
-| `dormant_account_spike` | Réactivation après 90 j, montant élevé, appareil inconnu | moyenne |
+| `dormant_account_spike` | Réactivation après 90 j ou plus, montant > 500 €, appareil inconnu | moyenne |
 | `high_risk_category` | Crypto / jeux d'argent > 200 € sur profil retail | moyenne |
 | `normal_purchase` | Référence — aucune anomalie | — |
 
@@ -133,12 +133,19 @@ Ce que le framework ne couvre pas, volontairement :
 - **Métriques LLM conditionnelles.** La CI publique valide le mode déterministe ;
   les métriques du mode LLM ne sont mesurées que lorsqu'une clé est fournie. Aucun
   run du mode LLM n'est publié dans ce dépôt à ce jour (voir l'amendement d'ADR-002).
-- **Prompt fintech en avance sur ses données.** Le prompt `v1.1` décrit deux
-  typologies avec des critères que le contexte transmis ne permet pas d'évaluer : la
-  distance entre deux pays (le contexte ne contient que leurs codes) et une fenêtre de
-  2 h (le contexte ne compte que les transactions du jour). Les règles, qui servent de
-  spécification, s'appuient sur le changement de pays et le compteur journalier.
-  Aligner le prompt demandera une `v1.2`, à mesurer en mode LLM.
+- **Prompts en décalage avec les règles.** Les règles servent de spécification ; les
+  prompts s'en écartent, et citent des critères que le contexte transmis ne permet pas
+  d'évaluer.
+  - Fintech `v1.1` : la distance entre deux pays (le contexte ne contient que leurs
+    codes ; la règle regarde le changement de pays), une fenêtre de 2 h (le contexte ne
+    compte que les transactions du jour), un compte dormant à plus de 90 j (la règle
+    compte 90 j ou plus).
+  - Medtech `v1.0` : un retard de calibration (absent du contexte), une batterie sous
+    20 % (la règle inclut 20 %), une désaturation rapide limitée à SpO₂ < 94 % (la
+    règle ne pose pas cette condition), une hypoglycémie « moyenne à haute » (la règle
+    dit moyenne).
+
+  Les aligner demandera de nouvelles versions de prompts, mesurées en mode LLM.
 - **Pas de tests de charge** ni de flux temps réel — traitement par lots uniquement.
 
 Pistes envisagées : un troisième secteur (télémétrie industrielle) sans modification
