@@ -54,7 +54,7 @@ The classifier runs in two modes, selected automatically:
 
 | Mode | When | Use case |
 |---|---|---|
-| **LLM mode** | `ANTHROPIC_API_KEY` is set | Local dev, protected CI jobs, demo |
+| **LLM mode** | `ANTHROPIC_API_KEY` is set | Local runs — no CI job sets the key |
 | **Fallback mode** | No API key present | CI without secrets, offline testing |
 
 The rule-based fallback is not a stub — it is a **specification** of the LLM's expected behaviour. If the LLM diverges from the rules, a test fails and triggers a prompt revision.
@@ -86,18 +86,18 @@ Fraud patterns implemented are based on real-world typologies documented in FATF
 
 | Scenario | Pattern | Expected severity |
 |---|---|---|
-| `geo_impossible` | Two locations > 1000 km apart in < 60 min | Critical |
-| `velocity_burst` | > 15 transactions/day or > 8 in 2 hours | High |
+| `geo_impossible` | Country change less than 2 hours after the previous transaction | Critical |
+| `velocity_burst` | 15 or more transactions in the day | High |
 | `card_testing` | Amount < €1.00 on unknown device | High |
 | `dormant_account_spike` | 90+ day inactivity → high-value transfer, unknown device | Medium |
 | `high_risk_category` | Crypto/gambling on retail account, > €200 | Medium |
 | `normal_purchase` | Baseline — no anomaly | — |
 
-**Operational KPIs visible in CI:** FP rate 0% (fallback), batch precision 100%, batch recall 100%.
+**Fallback-mode KPIs, measured on 2026-09-22** over 50 batches of 30 labeled samples per sector: FP rate 0%, precision 100%, recall 100%. CI does not print these figures: it only fails when a threshold is crossed.
 
 ## Bugs found and fixed during development
 
-This framework was built using a **shift-left QA** approach — defects were caught by tests before any manual verification was needed.
+This framework was built using a **shift-left QA** approach — the first five defects below were caught by tests before any manual verification was needed. The sixth was found later, by measurement: the suite tolerated it.
 
 | Bug | Layer detected | Root cause | Fix |
 |---|---|---|---|
@@ -106,6 +106,7 @@ This framework was built using a **shift-left QA** approach — defects were cau
 | `diastolic_bp_mmhg` exceeding schema max (201) | AI behaviour test | `hypertensive_crisis` generator used `systolic - 30` without clamping to schema max of 200 | Clamped: `min(systolic - 30, 200)` |
 | Bradycardia classified as `critical` instead of `high` | AI behaviour test | Fallback checked SpO₂ (which can be 88–94% in bradycardia) before heart rate | Tightened generator SpO₂ range to 91–95% (above clinical threshold) |
 | Sensor drift classified as `critical` clinical alert | AI behaviour test | Battery check rule evaluated after SpO₂ delta rule — low-battery oscillation triggered wrong rule | Moved battery check before SpO₂ delta in fallback rule priority |
+| `card_testing` sample at exactly €1.00 classified as normal | Measurement, not the suite: 5 misses in 2,000 samples | Generator drew amounts in 0.01–1.00 inclusive, while the rule fires on `< 1.00`. Fintech batch recall dipped to 96%, and `test_high_confidence_predictions_are_correct` (fintech) was flaky: its logic failed in 64 of 5,000 replays | Generator range narrowed to 0.01–0.99 |
 
 ## Stack
 
@@ -165,10 +166,10 @@ Both sectors expose the same interface (`generate_*_scenario`, `SCENARIO_LABELS`
 External system output — including LLM responses — should be validated as rigorously as any API response. `AnomalyResult` enforces cross-field constraints (e.g. `severity` must be null when `is_anomaly` is false) that JSON Schema alone cannot express.
 
 **Why prompt versioning?**
-A prompt file is a configuration artefact. Without versioning and regression tests, a one-line edit can silently degrade classifier accuracy. `fintech_v1.0` → `fintech_v1.1` is tracked in git; `test_prompt_version_passes_quality_gate` runs against both on every push.
+A prompt file is a configuration artefact. Without versioning and regression tests, a one-line edit can silently degrade classifier accuracy. `fintech_v1.0` → `fintech_v1.1` is tracked in git; `test_prompt_version_passes_quality_gate` holds both to the same quality gate. This only exercises the prompts in LLM mode: the fallback ignores the prompt version, so in CI (no key) no prompt is read.
 
 **Rule priority ordering in the fallback classifier**
-During development, the sensor-fault battery check had to be evaluated *before* the SpO₂ delta rule — otherwise a degraded sensor oscillating between 91% and 99% would trigger a clinical emergency alert instead of a technical fault. This ordering decision is now enforced by `test_sensor_fault_is_anomaly_not_clinical_emergency`.
+During development, the sensor-fault battery check had to be evaluated *before* the SpO₂ delta rule — otherwise a degraded sensor oscillating between 91% and 99% would be classified as an SpO₂ desaturation, a clinical alert, instead of a technical fault. With the current rules, putting the battery check back after the SpO₂ rules yields `severity=high`: `test_sensor_fault_is_anomaly_not_clinical_emergency` only rules out `critical` and still passes. What enforces the ordering is the single-scenario test, which expects `medium` — `test_scenario_detection[sensor_drift-True-medium]` is the one test that fails (checked on 2026-09-22 by reordering the rules and running the medtech suite).
 
 ## Test strategy
 
@@ -180,7 +181,7 @@ Examples:
 - `diastolic_bp_mmhg` must always be strictly less than `systolic_bp_mmhg` (IEC 62304 ref: SR-VITALS-002)
 - SpO₂ drop rate > 10%/min is physiologically impossible — rejected as sensor fault
 - `daily_total_amount` must include the current transaction — cross-field validator
-- `to_classifier_context()` strips PII fields before LLM injection
+- `to_classifier_context()` strips direct identifiers (transaction, account, patient and device IDs, IP, merchant name, coordinates) before LLM injection — vital signs, ward and medication still reach the LLM
 
 ```bash
 python -m pytest tests/api/ -v -m fintech   # Fintech contracts only
@@ -198,7 +199,7 @@ Six test categories per sector:
 | Single-scenario correctness | Each fraud/clinical pattern detected with correct severity |
 | False positive rate | ≤ 5% FP on a corpus of 50 normal samples (quality gate) |
 | Batch precision/recall | ≥ 85% precision, ≥ 85% recall across all scenarios |
-| Prompt regression | `v1.1` must not degrade accuracy vs `v1.0` on same dataset |
+| Prompt regression (fintech) | `v1.0` and `v1.1` both pass the quality gate on the same dataset, and `v1.1`'s FP rate stays within 5 points of `v1.0`'s — LLM mode only |
 | Output schema validation | LLM response always parses to valid `AnomalyResult` |
 | Confidence calibration | Predictions with confidence ≥ 0.85 must be correct |
 
@@ -236,7 +237,7 @@ python -m pytest tests/e2e/test_dashboard_ui.py -v    # Playwright UI tests
 | Precision | ≥ 85% | `test_batch_precision_above_threshold` |
 | Recall | ≥ 85% | `test_batch_recall_above_threshold` |
 | Critical alert recall | 100% | `test_spo2_desaturation_never_missed` |
-| CI merge block | All jobs green | `.github/workflows/ci.yml` quality-gate job |
+| CI status | All jobs green | `.github/workflows/ci.yml` quality-gate job (turns red if any job fails; `main` has no branch protection, so it does not block a merge) |
 
 ## Known limitations
 
@@ -244,7 +245,8 @@ Deliberate scope boundaries:
 
 - **Simulated data.** Streams are generated (Faker) from public references (WHO, FATF) — no real production feeds.
 - **Heuristic fallback.** The rules specify the LLM's expected behaviour; they do not claim to replace it in production.
-- **LLM metrics are key-gated.** Public CI validates the deterministic mode; LLM-mode metrics are only measured when a key is provided.
+- **LLM metrics are key-gated.** Public CI validates the deterministic mode; LLM-mode metrics are only measured when a key is provided. No LLM-mode run has been published in this repository so far (see the ADR-002 amendment).
+- **Fintech prompt ahead of its data.** Prompt `v1.1` describes two typologies with criteria the context it receives cannot support: the distance between two countries (the context only carries their codes) and a 2-hour window (the context only counts the day's transactions). The rules, which act as the specification, rely on the country change and the daily count. Aligning the prompt will take a `v1.2`, measured in LLM mode.
 - **No load testing** and no real-time streams — batch processing only.
 
 Candidate extensions: a third sector (industrial telemetry) with no classifier change — the adapter architecture allows it (ADR-001); a scheduled corpus re-run to detect model drift; a timestamped audit-report export for regulatory traceability.
