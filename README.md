@@ -98,7 +98,7 @@ criminalité financière.
 | Framework de test | Pytest, pytest-playwright |
 | Tests UI | Playwright (Chromium headless) |
 | Dashboard | Flask 3 |
-| CI | GitHub Actions — 3 jobs en matrice + un job de quality gate, rouge si l'un d'eux échoue |
+| CI | GitHub Actions — 3 jobs en matrice + un job de quality gate, check requis pour merger sur `main` (PR obligatoire, administrateurs compris) |
 | Décisions d'architecture | ADR ([docs/](docs/)) |
 
 ## Démarrage rapide
