@@ -89,7 +89,7 @@ Fraud patterns implemented are based on real-world typologies documented in FATF
 | `geo_impossible` | Country change less than 2 hours after the previous transaction | Critical |
 | `velocity_burst` | 15 or more transactions in the day | High |
 | `card_testing` | Amount < €1.00 on unknown device | High |
-| `dormant_account_spike` | 90+ day inactivity → high-value transfer, unknown device | Medium |
+| `dormant_account_spike` | 90+ day inactivity → transfer > €500, unknown device | Medium |
 | `high_risk_category` | Crypto/gambling on retail account, > €200 | Medium |
 | `normal_purchase` | Baseline — no anomaly | — |
 
@@ -107,6 +107,8 @@ This framework was built using a **shift-left QA** approach — the first five d
 | Bradycardia classified as `critical` instead of `high` | AI behaviour test | Fallback checked SpO₂ (which can be 88–94% in bradycardia) before heart rate | Tightened generator SpO₂ range to 91–95% (above clinical threshold) |
 | Sensor drift classified as `critical` clinical alert | AI behaviour test | Battery check rule evaluated after SpO₂ delta rule — low-battery oscillation triggered wrong rule | Moved battery check before SpO₂ delta in fallback rule priority |
 | `card_testing` sample at exactly €1.00 classified as normal | Measurement, not the suite: 5 misses in 2,000 samples | Generator drew amounts in 0.01–1.00 inclusive, while the rule fires on `< 1.00`. Fintech batch recall dipped to 96%, and `test_high_confidence_predictions_are_correct` (fintech) was flaky: its logic failed in 64 of 5,000 replays | Generator range narrowed to 0.01–0.99 |
+
+The sensor-drift row records the defect as observed at the time. The rule order was already fixed in the first pushed commit (`2c2a6d3`), so the `critical` outcome cannot be reproduced from the public history; with today's rules, the same reordering yields `high` (see *Rule priority ordering* below).
 
 ## Stack
 
@@ -246,7 +248,11 @@ Deliberate scope boundaries:
 - **Simulated data.** Streams are generated (Faker) from public references (WHO, FATF) — no real production feeds.
 - **Heuristic fallback.** The rules specify the LLM's expected behaviour; they do not claim to replace it in production.
 - **LLM metrics are key-gated.** Public CI validates the deterministic mode; LLM-mode metrics are only measured when a key is provided. No LLM-mode run has been published in this repository so far (see the ADR-002 amendment).
-- **Fintech prompt ahead of its data.** Prompt `v1.1` describes two typologies with criteria the context it receives cannot support: the distance between two countries (the context only carries their codes) and a 2-hour window (the context only counts the day's transactions). The rules, which act as the specification, rely on the country change and the daily count. Aligning the prompt will take a `v1.2`, measured in LLM mode.
+- **Prompts out of step with the rules.** The rules act as the specification; the prompts depart from them, and cite criteria the context they receive cannot support.
+  - Fintech `v1.1`: the distance between two countries (the context only carries their codes; the rule looks at the country change), a 2-hour window (the context only counts the day's transactions), a dormant account at more than 90 days (the rule counts 90 days or more).
+  - Medtech `v1.0`: a calibration delay (absent from the context), a battery below 20% (the rule includes 20%), a rapid desaturation restricted to SpO₂ < 94% (the rule sets no such condition), a "medium to high" hypoglycaemia (the rule says medium).
+
+  Aligning them will take new prompt versions, measured in LLM mode.
 - **No load testing** and no real-time streams — batch processing only.
 
 Candidate extensions: a third sector (industrial telemetry) with no classifier change — the adapter architecture allows it (ADR-001); a scheduled corpus re-run to detect model drift; a timestamped audit-report export for regulatory traceability.
