@@ -239,7 +239,7 @@ python -m pytest tests/e2e/test_dashboard_ui.py -v    # Playwright UI tests
 | Precision | ≥ 85% | `test_batch_precision_above_threshold` |
 | Recall | ≥ 85% | `test_batch_recall_above_threshold` |
 | Critical alert recall | 100% | `test_spo2_desaturation_never_missed` |
-| CI status | All jobs green | `.github/workflows/ci.yml` quality-gate job (turns red if any job fails; `main` has no branch protection, so it does not block a merge) |
+| CI merge block | All jobs green | `.github/workflows/ci.yml` quality-gate job — a required status check on `main` (pull request required, admins included), so a red run blocks the merge |
 
 ## Known limitations
 
