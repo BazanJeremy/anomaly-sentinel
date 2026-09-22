@@ -21,7 +21,7 @@ Shared core:
   - Pydantic schema validation layer
   - Test harness (Pytest fixtures, markers, conftest)
   - CI/CD pipeline (matrix strategy)
-  - Reporting (Allure, audit logs)
+  - Reporting (Allure, audit logs) — not implemented, see the amendment below
 
 Sector adapters:
   - src/simulators/fintech/  — Transaction events, fraud patterns
@@ -54,3 +54,15 @@ Each adapter exposes the same interface (`generate_<type>_scenario`, `SCENARIO_L
 - **Positive:** The architecture extends to a third sector (e.g. insurance) without restructuring.  
 - **Negative:** Shared schemas means both sectors must agree on the `to_classifier_context()` contract. Changes require updating both adapters.  
 - **Mitigated by:** `test_fintech_schema.py::test_to_classifier_context_*` and equivalent Medtech tests act as regression guards on the interface contract.
+
+---
+
+## Amendment — 2026-09-22
+
+The shared core listed "Reporting (Allure, audit logs)". Neither exists in the code:
+`allure-pytest` is commented out in `requirements.txt`, and nothing writes an audit log. A
+timestamped audit-report export is listed in the README as a candidate extension, not as a
+feature. The other shared-core components are present in the code — classifier interface,
+schema layer, test harness with `fintech` / `medtech` markers, CI matrix over both sectors —
+and so are the interface-contract tests (`test_to_classifier_context_*` for fintech,
+`test_context_excludes_patient_pii` and its neighbours for medtech).

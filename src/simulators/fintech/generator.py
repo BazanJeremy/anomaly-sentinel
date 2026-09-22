@@ -189,11 +189,13 @@ def scenario_dormant_account_spike() -> Transaction:
 def scenario_card_testing() -> Transaction:
     """
     Card testing probe — labeled ANOMALY (high severity).
-    Tiny amount (0.01–1.00 EUR) on a new unknown device.
+    Tiny amount (0.01–0.99 EUR) on a new unknown device.
     Criminals test stolen card numbers with micro-transactions before large fraud.
+    The upper bound stays strictly under the €1.00 card-testing threshold: a draw
+    rounded to exactly 1.00 used to fall outside the rule it is labeled for.
     """
     now = datetime.now(timezone.utc)
-    amount = Decimal(str(round(random.uniform(0.01, 1.00), 2)))
+    amount = Decimal(str(round(random.uniform(0.01, 0.99), 2)))
 
     return Transaction(
         **_base_account(),

@@ -30,12 +30,15 @@ Trois choix de stratégie de validation structurent le framework :
 - **Fallback déterministe.** La suite complète (182 tests) tourne sans clé API. Si le
   LLM diverge des règles, un test échoue et déclenche une révision de prompt.
 - **Prompts versionnés.** Un prompt est un artefact de configuration : chaque version
-  (`v1.0` → `v1.1`) est rejouée sur le même corpus, la régression est bloquante.
+  (fintech `v1.0` et `v1.1`) doit passer les mêmes seuils sur le même corpus, et `v1.1`
+  ne doit pas dégrader le taux de faux positifs de `v1.0` de plus de 5 points. Ces
+  contrôles ne portent que sur le mode LLM : sans clé, aucun prompt n'est lu.
 - **Observabilité qualité.** Précision, rappel et taux de faux positifs sont calculés
-  à chaque run et exposés dans le dashboard et la CI.
+  à chaque run et affichés dans le dashboard ; en CI, leurs seuils font échouer la suite.
 
-Cinq défauts réels ont été détectés par la suite de tests avant toute revue manuelle —
-le détail est documenté dans la [version anglaise](README.en.md).
+Cinq défauts réels ont été détectés par la suite de tests avant toute revue manuelle ;
+un sixième a été trouvé plus tard, par la mesure et non par la suite — le détail est
+documenté dans la [version anglaise](README.en.md).
 
 ## Architecture
 
@@ -44,7 +47,7 @@ le détail est documenté dans la [version anglaise](README.en.md).
                  │                       fraude, labels attendus connus
                  ▼
   Contrats de données (Pydantic v2)      rejet des données invalides AVANT le LLM,
-                 │                       suppression des PII du contexte injecté
+                 │                       identifiants directs retirés du contexte
                  ▼
   Classifieur double mode                Claude API si clé présente — sinon fallback
                  │                       à règles : une spécification exécutable du
@@ -74,8 +77,8 @@ des tests bloquants, pas des intentions.
 
 | Scénario | Typologie de fraude | Sévérité attendue |
 |---|---|---|
-| `geo_impossible` | Deux pays à > 1 000 km d'écart en < 60 min | critique |
-| `velocity_burst` | > 15 transactions sur la journée | haute |
+| `geo_impossible` | Changement de pays moins de 2 h après la transaction précédente | critique |
+| `velocity_burst` | 15 transactions ou plus sur la journée | haute |
 | `card_testing` | Micro-montant < 1 € sur appareil inconnu | haute |
 | `dormant_account_spike` | Réactivation après 90 j, montant élevé, appareil inconnu | moyenne |
 | `high_risk_category` | Crypto / jeux d'argent > 200 € sur profil retail | moyenne |
@@ -95,7 +98,7 @@ criminalité financière.
 | Framework de test | Pytest, pytest-playwright |
 | Tests UI | Playwright (Chromium headless) |
 | Dashboard | Flask 3 |
-| CI | GitHub Actions — 3 jobs en matrice, quality gate bloquant |
+| CI | GitHub Actions — 3 jobs en matrice + un job de quality gate, rouge si l'un d'eux échoue |
 | Décisions d'architecture | ADR ([docs/](docs/)) |
 
 ## Démarrage rapide
@@ -128,7 +131,14 @@ Ce que le framework ne couvre pas, volontairement :
 - **Fallback heuristique.** Les règles spécifient le comportement attendu du LLM ;
   elles ne prétendent pas le remplacer en production.
 - **Métriques LLM conditionnelles.** La CI publique valide le mode déterministe ;
-  les métriques du mode LLM ne sont mesurées que lorsqu'une clé est fournie.
+  les métriques du mode LLM ne sont mesurées que lorsqu'une clé est fournie. Aucun
+  run du mode LLM n'est publié dans ce dépôt à ce jour (voir l'amendement d'ADR-002).
+- **Prompt fintech en avance sur ses données.** Le prompt `v1.1` décrit deux
+  typologies avec des critères que le contexte transmis ne permet pas d'évaluer : la
+  distance entre deux pays (le contexte ne contient que leurs codes) et une fenêtre de
+  2 h (le contexte ne compte que les transactions du jour). Les règles, qui servent de
+  spécification, s'appuient sur le changement de pays et le compteur journalier.
+  Aligner le prompt demandera une `v1.2`, à mesurer en mode LLM.
 - **Pas de tests de charge** ni de flux temps réel — traitement par lots uniquement.
 
 Pistes envisagées : un troisième secteur (télémétrie industrielle) sans modification
