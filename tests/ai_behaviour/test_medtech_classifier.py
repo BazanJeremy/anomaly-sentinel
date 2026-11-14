@@ -26,6 +26,8 @@ from src.simulators.medtech.generator import (
     generate_vital_scenario,
 )
 
+# Rule-based fallback unless a live run was asked for: the key alone is not
+# enough, tests/conftest.py removes it without RUN_LIVE_API_TESTS=1.
 USE_FALLBACK = not bool(os.getenv("ANTHROPIC_API_KEY"))
 PROMPT_VERSION = "v1.0"
 
