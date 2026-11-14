@@ -7,8 +7,9 @@ and measure its observable behaviour against labeled ground-truth scenarios.
 Two modes:
   - FALLBACK mode (default, no API key): tests the rule-based classifier.
     All tests run in CI without any secrets.
-  - LLM mode (ANTHROPIC_API_KEY set): tests the actual Claude classifier.
-    Run locally or in a protected CI job with secrets.
+  - LLM mode (ANTHROPIC_API_KEY set AND RUN_LIVE_API_TESTS=1): tests the
+    actual Claude classifier. Run locally or in a protected CI job with
+    secrets. The key alone never triggers a billed call.
 
 The same test suite covers both modes — this is intentional.
 The rule-based fallback is a specification of the LLM's expected behaviour.
@@ -38,7 +39,8 @@ from src.simulators.fintech.generator import (
     generate_mixed_dataset,
 )
 
-# Use rule-based fallback unless a real API key is present
+# Rule-based fallback unless a live run was asked for: the key alone is not
+# enough, tests/conftest.py removes it without RUN_LIVE_API_TESTS=1.
 USE_FALLBACK = not bool(os.getenv("ANTHROPIC_API_KEY"))
 PROMPT_VERSION = "v1.1"
 

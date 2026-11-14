@@ -3,7 +3,7 @@
 **AI-augmented test framework for anomaly detection systems in regulated industries — Medtech & Fintech**
 
 [![CI](https://github.com/BazanJeremy/anomaly-sentinel/actions/workflows/ci.yml/badge.svg)](https://github.com/BazanJeremy/anomaly-sentinel/actions/workflows/ci.yml)
-[![Tests](https://img.shields.io/badge/tests-182%20passing-brightgreen?logo=pytest)](tests/)
+[![Tests](https://img.shields.io/badge/tests-184%20passing-brightgreen?logo=pytest)](tests/)
 [![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12-blue?logo=python)](requirements.txt)
 [![License: MIT](https://img.shields.io/badge/license-MIT-lightgrey)](LICENSE)
 
@@ -54,7 +54,7 @@ The classifier runs in two modes, selected automatically:
 
 | Mode | When | Use case |
 |---|---|---|
-| **LLM mode** | `ANTHROPIC_API_KEY` is set | Local runs — no CI job sets the key |
+| **LLM mode** | `ANTHROPIC_API_KEY` is set — and, for the test suite, `RUN_LIVE_API_TESTS=1` | Local runs — no CI job sets the key |
 | **Fallback mode** | No API key present | CI without secrets, offline testing |
 
 The rule-based fallback is not a stub — it is a **specification** of the LLM's expected behaviour. If the LLM diverges from the rules, a test fails and triggers a prompt revision.
@@ -138,8 +138,8 @@ python -m playwright install chromium
 ### Run all tests
 
 ```bash
-python -m pytest tests/ -v                            # Full suite (182 tests, fallback mode)
-ANTHROPIC_API_KEY=sk-... python -m pytest tests/ -v   # Full suite with live Claude API
+python -m pytest tests/ -v                            # Full suite (184 tests, fallback mode)
+RUN_LIVE_API_TESTS=1 ANTHROPIC_API_KEY=sk-... python -m pytest tests/ -v   # Full suite with live Claude API (opt-in: the key alone is ignored)
 ```
 
 ### Run the dashboard
@@ -211,7 +211,7 @@ Medtech-specific:
 
 ```bash
 python -m pytest tests/ai_behaviour/ -v                        # All AI behaviour tests (fallback mode)
-ANTHROPIC_API_KEY=sk-... python -m pytest tests/ai_behaviour/  # LLM mode
+RUN_LIVE_API_TESTS=1 ANTHROPIC_API_KEY=sk-... python -m pytest tests/ai_behaviour/  # LLM mode
 ```
 
 ### Layer 3 — E2E tests (`tests/e2e/`) — 68 tests

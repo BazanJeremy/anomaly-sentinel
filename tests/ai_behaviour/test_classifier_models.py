@@ -132,3 +132,43 @@ class TestClassificationMetrics:
     def test_zero_division_safe_recall(self):
         m = self._make_metrics(tp=0, tn=10, fp=2, fn=0)
         assert m.recall == 0.0
+
+
+class TestLiveOptIn:
+    """The suite never spends money by accident.
+
+    An API key lying in the environment used to switch the whole suite, and
+    the dashboard under test, to live Claude calls. Live runs are now an
+    explicit opt-in: ``RUN_LIVE_API_TESTS=1``. Without it the key is removed
+    from the environment before any test module reads it (``tests/conftest.py``).
+    """
+
+    def test_api_key_is_removed_unless_live_runs_are_asked_for(self):
+        from tests.conftest import LIVE_OPT_IN, strip_api_key
+
+        environ = {"ANTHROPIC_API_KEY": "sk-not-a-real-key", "PATH": "x"}
+        assert strip_api_key(environ) is True
+        assert environ == {"PATH": "x"}
+
+        opted_in = {"ANTHROPIC_API_KEY": "sk-not-a-real-key", LIVE_OPT_IN: "1"}
+        assert strip_api_key(opted_in) is False
+        assert opted_in["ANTHROPIC_API_KEY"] == "sk-not-a-real-key"
+
+        assert strip_api_key({"PATH": "x"}) is False  # nothing to remove
+
+    def test_everything_decided_at_import_time_is_in_fallback_mode(self):
+        import os
+
+        from tests.conftest import LIVE_OPT_IN
+
+        if os.environ.get(LIVE_OPT_IN) == "1":
+            pytest.skip("live run requested")
+
+        import src.dashboard.app as dashboard
+        import tests.ai_behaviour.test_fintech_classifier as fintech
+        import tests.ai_behaviour.test_medtech_classifier as medtech
+
+        assert "ANTHROPIC_API_KEY" not in os.environ
+        assert fintech.USE_FALLBACK
+        assert medtech.USE_FALLBACK
+        assert dashboard.USE_FALLBACK
