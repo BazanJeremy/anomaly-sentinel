@@ -190,7 +190,7 @@ python -m pytest tests/api/ -v -m fintech   # Fintech contracts only
 python -m pytest tests/api/ -v -m medtech   # Medtech contracts only
 ```
 
-### Layer 2 — AI behaviour tests (`tests/ai_behaviour/`) — 55 tests
+### Layer 2 — AI behaviour tests (`tests/ai_behaviour/`) — 57 tests
 
 Treats the AI classifier as a black-box component with measurable, observable behaviour.
 
