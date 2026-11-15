@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [main]
 
+# Least privilege: jobs only read the repository. A job that needs more
+# declares it itself.
+permissions:
+  contents: read
+
 jobs:
   schema-tests:
     name: "Schema contracts | ${{ matrix.sector }} | Python ${{ matrix.python-version }}"
