@@ -191,6 +191,18 @@ class TestVitalClassifierContext:
         assert "spo2_delta" in ctx
         assert ctx["spo2_delta"] == pytest.approx(-5.0, abs=0.1)
 
+    def test_previous_spo2_without_current_reading_omits_delta(self, valid_vitals_payload):
+        """No current SpO2 means no delta to report, whatever the previous reading was."""
+        payload = {
+            **valid_vitals_payload,
+            "spo2_pct": None,
+            "previous_spo2_pct": 97.0,
+        }
+        vs = VitalSigns(**payload)
+        ctx = vs.to_classifier_context()
+        assert "spo2" not in ctx
+        assert "spo2_delta" not in ctx
+
     def test_none_vitals_excluded_from_context(self, valid_vitals_payload):
         vs = VitalSigns(**valid_vitals_payload)
         ctx = vs.to_classifier_context()

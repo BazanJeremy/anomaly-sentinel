@@ -228,6 +228,11 @@ class TestBatchEndpoint:
         r = api_client.post("/api/batch", json={"sector": "fintech", "n_per_scenario": 99})
         assert r.status_code == 400
 
+    def test_batch_n_not_a_number_returns_400(self, api_client):
+        r = api_client.post("/api/batch", json={"sector": "fintech", "n_per_scenario": "abc"})
+        assert r.status_code == 400
+        assert "n_per_scenario" in r.json()["error"]
+
     def test_batch_total_sample_count_correct(self, api_client):
         d = api_client.post("/api/batch", json={"sector": "fintech", "n_per_scenario": 4}).json()
         # 6 scenarios × 4 = 24 total

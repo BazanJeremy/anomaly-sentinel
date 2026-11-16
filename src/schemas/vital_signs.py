@@ -139,7 +139,7 @@ class VitalSigns(BaseModel):
             if val is not None:
                 ctx[key] = val
 
-        if self.previous_spo2_pct is not None:
+        if self.spo2_pct is not None and self.previous_spo2_pct is not None:
             ctx["spo2_delta"] = round(self.spo2_pct - self.previous_spo2_pct, 1)
         if self.minutes_since_last_reading is not None:
             ctx["mins_since_last"] = self.minutes_since_last_reading
