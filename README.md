@@ -4,7 +4,7 @@
 comme un composant critique, en medtech comme en fintech.**
 
 [![CI](https://github.com/BazanJeremy/anomaly-sentinel/actions/workflows/ci.yml/badge.svg)](https://github.com/BazanJeremy/anomaly-sentinel/actions/workflows/ci.yml)
-[![Tests](https://img.shields.io/badge/tests-184%20passing-brightgreen?logo=pytest)](tests/)
+[![Tests](https://img.shields.io/badge/tests-186%20passing-brightgreen?logo=pytest)](tests/)
 [![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12-blue?logo=python)](requirements.txt)
 [![License: MIT](https://img.shields.io/badge/license-MIT-lightgrey)](LICENSE)
 
@@ -27,7 +27,7 @@ CI si elle passe sous les seuils.
 
 Trois choix de stratégie de validation structurent le framework :
 
-- **Fallback déterministe.** La suite complète (184 tests) tourne sans clé API. Si le
+- **Fallback déterministe.** La suite complète (186 tests) tourne sans clé API. Si le
   LLM diverge des règles, un test échoue et déclenche une révision de prompt.
 - **Prompts versionnés.** Un prompt est un artefact de configuration : chaque version
   (fintech `v1.0` et `v1.1`) doit passer les mêmes seuils sur le même corpus, et `v1.1`
@@ -109,7 +109,7 @@ cd anomaly-sentinel
 pip install -r requirements.txt
 python -m playwright install chromium   # uniquement pour les tests UI
 
-python -m pytest    # 184 tests — aucune clé API requise
+python -m pytest    # 186 tests — aucune clé API requise
 ```
 
 La suite tourne intégralement en mode déterministe. Pour exercer le mode LLM,

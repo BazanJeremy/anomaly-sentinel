@@ -3,7 +3,7 @@
 **AI-augmented test framework for anomaly detection systems in regulated industries — Medtech & Fintech**
 
 [![CI](https://github.com/BazanJeremy/anomaly-sentinel/actions/workflows/ci.yml/badge.svg)](https://github.com/BazanJeremy/anomaly-sentinel/actions/workflows/ci.yml)
-[![Tests](https://img.shields.io/badge/tests-184%20passing-brightgreen?logo=pytest)](tests/)
+[![Tests](https://img.shields.io/badge/tests-186%20passing-brightgreen?logo=pytest)](tests/)
 [![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12-blue?logo=python)](requirements.txt)
 [![License: MIT](https://img.shields.io/badge/license-MIT-lightgrey)](LICENSE)
 
@@ -138,7 +138,7 @@ python -m playwright install chromium
 ### Run all tests
 
 ```bash
-python -m pytest tests/ -v                            # Full suite (184 tests, fallback mode)
+python -m pytest tests/ -v                            # Full suite (186 tests, fallback mode)
 RUN_LIVE_API_TESTS=1 ANTHROPIC_API_KEY=sk-... python -m pytest tests/ -v   # Full suite with live Claude API (opt-in: the key alone is ignored)
 ```
 
@@ -175,7 +175,7 @@ During development, the sensor-fault battery check had to be evaluated *before* 
 
 ## Test strategy
 
-### Layer 1 — Schema contract tests (`tests/api/`) — 59 tests
+### Layer 1 — Schema contract tests (`tests/api/`) — 60 tests
 
 Validates Pydantic v2 models enforce business-level constraints, not just types.
 
@@ -216,7 +216,7 @@ RUN_LIVE_API_TESTS=1 ANTHROPIC_API_KEY=sk-... python -m pytest tests/ai_behaviou
 
 ### Layer 3 — E2E tests (`tests/e2e/`) — 68 tests
 
-**API tests (49):** full REST contract coverage — happy path, error codes (400/404/405), parametrized scenario matrix, quality gate via `/api/batch`.
+**API tests (50):** full REST contract coverage — happy path, error codes (400/404/405), parametrized scenario matrix, quality gate via `/api/batch`.
 
 **Playwright UI tests (19):** headless Chromium against a live Flask server spun up within the pytest session.
 

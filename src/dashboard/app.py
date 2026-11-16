@@ -166,7 +166,10 @@ def batch_evaluate():
     body = request.get_json(silent=True) or {}
     sector = body.get("sector", "fintech")
     prompt_version = body.get("prompt_version", "v1.1" if sector == "fintech" else "v1.0")
-    n_per_scenario = int(body.get("n_per_scenario", 5))
+    try:
+        n_per_scenario = int(body.get("n_per_scenario", 5))
+    except (TypeError, ValueError):
+        return jsonify({"error": "n_per_scenario must be an integer between 1 and 20"}), 400
 
     if sector not in ("fintech", "medtech"):
         return jsonify({"error": "sector must be 'fintech' or 'medtech'"}), 400
